@@ -17,7 +17,11 @@ const TowerConfig = {
     projectileSize: 3,
     splash: 0,
     slow: 0,
-    description: '攻击快，伤害低'
+    slowDuration: 0,
+    description: '攻击快，伤害低',
+    upgradeCosts: [40, 80, 150],
+    upgradeDamageMult: [1, 1.6, 2.4, 3.5],
+    upgradeRangeMult: [1, 1.15, 1.3, 1.5]
   },
   [TowerTypes.CANNON]: {
     name: '炮塔',
@@ -31,7 +35,12 @@ const TowerConfig = {
     projectileSize: 6,
     splash: 40,
     slow: 0,
-    description: '攻击慢，范围伤害'
+    slowDuration: 0,
+    description: '攻击慢，范围伤害',
+    upgradeCosts: [80, 150, 250],
+    upgradeDamageMult: [1, 1.5, 2.2, 3.2],
+    upgradeRangeMult: [1, 1.1, 1.25, 1.45],
+    upgradeSplashMult: [1, 1.2, 1.5, 2.0]
   },
   [TowerTypes.FROST]: {
     name: '冰霜塔',
@@ -46,7 +55,12 @@ const TowerConfig = {
     splash: 0,
     slow: 0.4,
     slowDuration: 2000,
-    description: '减速敌人'
+    description: '减速敌人',
+    upgradeCosts: [60, 120, 200],
+    upgradeDamageMult: [1, 1.4, 2.0, 3.0],
+    upgradeRangeMult: [1, 1.15, 1.3, 1.5],
+    upgradeSlowMult: [1, 1.25, 1.6, 2.0],
+    upgradeSlowDurationMult: [1, 1.2, 1.5, 2.0]
   }
 };
 
@@ -56,7 +70,8 @@ class Tower {
     this.col = col;
     this.row = row;
     this.gameMap = gameMap;
-    this.config = TowerConfig[type];
+    this.baseConfig = TowerConfig[type];
+    this.level = 0;
 
     this.x = col * gameMap.tileSize + gameMap.tileSize / 2;
     this.y = row * gameMap.tileSize + gameMap.tileSize / 2;
@@ -64,6 +79,34 @@ class Tower {
     this.cooldown = 0;
     this.angle = 0;
     this.target = null;
+
+    this._recalcStats();
+  }
+
+  _recalcStats() {
+    const cfg = this.baseConfig;
+    const lvl = this.level;
+    this.damage = Math.round(cfg.damage * cfg.upgradeDamageMult[lvl]);
+    this.range = Math.round(cfg.range * cfg.upgradeRangeMult[lvl]);
+    this.splash = cfg.splash > 0 ? Math.round(cfg.splash * (cfg.upgradeSplashMult ? cfg.upgradeSplashMult[lvl] : 1)) : 0;
+    this.slow = cfg.slow > 0 ? Math.min(0.9, cfg.slow * (cfg.upgradeSlowMult ? cfg.upgradeSlowMult[lvl] : 1)) : 0;
+    this.slowDuration = cfg.slowDuration > 0 ? Math.round(cfg.slowDuration * (cfg.upgradeSlowDurationMult ? cfg.upgradeSlowDurationMult[lvl] : 1)) : 0;
+  }
+
+  canUpgrade() {
+    return this.level < this.baseConfig.upgradeCosts.length;
+  }
+
+  getUpgradeCost() {
+    if (!this.canUpgrade()) return Infinity;
+    return this.baseConfig.upgradeCosts[this.level];
+  }
+
+  upgrade() {
+    if (!this.canUpgrade()) return false;
+    this.level++;
+    this._recalcStats();
+    return true;
   }
 
   update(deltaTime, enemySpawner, projectiles) {
@@ -71,14 +114,14 @@ class Tower {
       this.cooldown -= deltaTime;
     }
 
-    this.target = enemySpawner.getClosestEnemyInRange(this.x, this.y, this.config.range);
+    this.target = enemySpawner.getClosestEnemyInRange(this.x, this.y, this.range);
 
     if (this.target) {
       this.angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
 
       if (this.cooldown <= 0) {
         this.fire(projectiles);
-        this.cooldown = this.config.fireRate;
+        this.cooldown = this.baseConfig.fireRate;
       }
     }
   }
@@ -88,13 +131,13 @@ class Tower {
       this.x,
       this.y,
       this.target,
-      this.config.damage,
-      this.config.projectileSpeed,
-      this.config.projectileSize,
-      this.config.projectileColor,
-      this.config.splash,
-      this.config.slow,
-      this.config.slowDuration
+      this.damage,
+      this.baseConfig.projectileSpeed,
+      this.baseConfig.projectileSize + this.level,
+      this.baseConfig.projectileColor,
+      this.splash,
+      this.slow,
+      this.slowDuration
     );
     projectiles.push(projectile);
   }
@@ -109,39 +152,57 @@ class Tower {
     ctx.fillStyle = '#555';
     ctx.fillRect(-halfSize, -halfSize, size, size);
 
+    if (this.level >= 2) {
+      ctx.strokeStyle = '#FFD700';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-halfSize, -halfSize, size, size);
+    }
+
     ctx.rotate(this.angle);
 
-    ctx.fillStyle = this.config.color;
+    const bodyRadius = size * 0.35 + this.level * 2;
+    ctx.fillStyle = this.baseConfig.color;
     ctx.beginPath();
-    ctx.arc(0, 0, size * 0.35, 0, Math.PI * 2);
+    ctx.arc(0, 0, bodyRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = this.config.color;
-    ctx.fillRect(0, -size * 0.12, size * 0.5, size * 0.24);
+    ctx.fillStyle = this.baseConfig.color;
+    ctx.fillRect(0, -size * 0.12 - this.level, size * 0.5 + this.level * 3, size * 0.24 + this.level * 2);
 
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(0, 0, size * 0.35, 0, Math.PI * 2);
+    ctx.arc(0, 0, bodyRadius, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.restore();
+
+    if (this.level > 0) {
+      ctx.save();
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 10px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const stars = '★'.repeat(this.level);
+      ctx.fillText(stars, this.x, this.y - halfSize - 6);
+      ctx.restore();
+    }
   }
 
   drawRange(ctx) {
     ctx.save();
     ctx.globalAlpha = 0.15;
-    ctx.fillStyle = this.config.color;
+    ctx.fillStyle = this.baseConfig.color;
     ctx.beginPath();
-    ctx.arc(this.x, this.y, this.config.range, 0, Math.PI * 2);
+    ctx.arc(this.x, this.y, this.range, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.globalAlpha = 0.5;
-    ctx.strokeStyle = this.config.color;
+    ctx.strokeStyle = this.baseConfig.color;
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 5]);
     ctx.beginPath();
-    ctx.arc(this.x, this.y, this.config.range, 0, Math.PI * 2);
+    ctx.arc(this.x, this.y, this.range, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();

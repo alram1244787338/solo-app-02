@@ -103,17 +103,23 @@ class Enemy {
   draw(ctx) {
     if (!this.alive) return;
 
+    const isSlowed = this.slowed > 0;
+
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    ctx.fillStyle = this.slowed > 0 ? '#9370DB' : this.color;
+    if (isSlowed) {
+      ctx.fillStyle = '#5BC0DE';
+    } else {
+      ctx.fillStyle = this.color;
+    }
 
     switch (this.shape) {
       case 'circle':
         ctx.beginPath();
         ctx.arc(0, 0, this.size, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#2C3E50';
+        ctx.strokeStyle = isSlowed ? '#2980B9' : '#2C3E50';
         ctx.lineWidth = 2;
         ctx.stroke();
         break;
@@ -124,16 +130,35 @@ class Enemy {
         ctx.lineTo(-this.size, this.size);
         ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = '#2C3E50';
+        ctx.strokeStyle = isSlowed ? '#2980B9' : '#2C3E50';
         ctx.lineWidth = 2;
         ctx.stroke();
         break;
       case 'square':
         ctx.fillRect(-this.size, -this.size, this.size * 2, this.size * 2);
-        ctx.strokeStyle = '#2C3E50';
+        ctx.strokeStyle = isSlowed ? '#2980B9' : '#2C3E50';
         ctx.lineWidth = 2;
         ctx.strokeRect(-this.size, -this.size, this.size * 2, this.size * 2);
         break;
+    }
+
+    if (isSlowed) {
+      ctx.strokeStyle = 'rgba(174, 232, 240, 0.6)';
+      ctx.lineWidth = 1;
+      const t = Date.now() / 500;
+      for (let i = 0; i < 4; i++) {
+        const angle = t + (Math.PI * 2 / 4) * i;
+        const dist = this.size + 4;
+        const cx = Math.cos(angle) * dist;
+        const cy = Math.sin(angle) * dist;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy);
+        ctx.lineTo(cx, cy - 4);
+        ctx.lineTo(cx + 3, cy);
+        ctx.lineTo(cx, cy + 4);
+        ctx.closePath();
+        ctx.stroke();
+      }
     }
 
     ctx.restore();
@@ -153,6 +178,14 @@ class Enemy {
 
     ctx.fillStyle = hpColor;
     ctx.fillRect(this.x - hpBarWidth / 2, hpBarY, hpBarWidth * hpPercent, hpBarHeight);
+
+    if (isSlowed) {
+      ctx.save();
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = '#5BC0DE';
+      ctx.fillRect(this.x - hpBarWidth / 2, hpBarY, hpBarWidth, hpBarHeight);
+      ctx.restore();
+    }
   }
 }
 
@@ -165,6 +198,7 @@ class EnemySpawner {
     this.spawnTimer = 0;
     this.waveActive = false;
     this.waveComplete = true;
+    this.nextWavePreview = this._generateWavePreview(1);
   }
 
   startWave() {
@@ -175,6 +209,45 @@ class EnemySpawner {
     this.waveComplete = false;
     this.spawnQueue = this._generateWaveEnemies(this.wave);
     this.spawnTimer = 0;
+    this.nextWavePreview = this._generateWavePreview(this.wave + 1);
+  }
+
+  _generateWavePreview(wave) {
+    const composition = this._getWaveComposition(wave);
+    return {
+      wave: wave,
+      composition: composition
+    };
+  }
+
+  _getWaveComposition(wave) {
+    const counts = {};
+    counts[EnemyTypes.NORMAL] = 0;
+    counts[EnemyTypes.FAST] = 0;
+    counts[EnemyTypes.TANK] = 0;
+
+    const baseCount = 5 + Math.floor(wave * 1.5);
+
+    for (let i = 0; i < baseCount; i++) {
+      let type;
+      if (wave <= 2) {
+        type = EnemyTypes.NORMAL;
+      } else if (wave <= 4) {
+        type = Math.random() < 0.7 ? EnemyTypes.NORMAL : EnemyTypes.FAST;
+      } else {
+        const rand = Math.random();
+        if (rand < 0.5) type = EnemyTypes.NORMAL;
+        else if (rand < 0.8) type = EnemyTypes.FAST;
+        else type = EnemyTypes.TANK;
+      }
+      counts[type]++;
+    }
+
+    const result = [];
+    if (counts[EnemyTypes.NORMAL] > 0) result.push({ type: EnemyTypes.NORMAL, count: counts[EnemyTypes.NORMAL] });
+    if (counts[EnemyTypes.FAST] > 0) result.push({ type: EnemyTypes.FAST, count: counts[EnemyTypes.FAST] });
+    if (counts[EnemyTypes.TANK] > 0) result.push({ type: EnemyTypes.TANK, count: counts[EnemyTypes.TANK] });
+    return result;
   }
 
   _generateWaveEnemies(wave) {

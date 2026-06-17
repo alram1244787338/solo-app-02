@@ -79,6 +79,11 @@ class Game {
   }
 
   _handleSidebarClick(x, y) {
+    if (this.ui.isUpgradeButtonClicked(x, y)) {
+      this._tryUpgradeTower();
+      return;
+    }
+
     const towerType = this.ui.getClickedTowerButton(x, y);
     if (towerType) {
       const config = TowerConfig[towerType];
@@ -110,6 +115,17 @@ class Game {
     }
   }
 
+  _tryUpgradeTower() {
+    if (!this.selectedTower) return;
+    if (!this.selectedTower.canUpgrade()) return;
+
+    const cost = this.selectedTower.getUpgradeCost();
+    if (this.gold < cost) return;
+
+    this.gold -= cost;
+    this.selectedTower.upgrade();
+  }
+
   _selectExistingTower(col, row) {
     this.selectedTower = this.towerManager.getTowerAt(col, row);
   }
@@ -132,7 +148,6 @@ class Game {
   update(deltaTime) {
     if (this.gameOver) return;
 
-    const previousAliveCount = this.enemySpawner.enemies.filter(e => e.alive).length;
     const previousEnemies = [...this.enemySpawner.enemies];
 
     this.enemySpawner.update(deltaTime);
