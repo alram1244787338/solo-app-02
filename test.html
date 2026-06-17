@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>塔防游戏 - 测试</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+      color: #fff;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, #4CAF50, #8BC34A);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 30px;
+    }
+
+    .summary {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 3rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      color: #888;
+    }
+
+    .stat.passed .stat-value {
+      color: #4CAF50;
+    }
+
+    .stat.failed .stat-value {
+      color: #f44336;
+    }
+
+    .stat.total .stat-value {
+      color: #2196F3;
+    }
+
+    .suite {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .suite-header {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 16px 24px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
+    }
+
+    .suite-header:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .suite-toggle {
+      font-size: 0.8rem;
+      color: #888;
+    }
+
+    .suite-body {
+      padding: 0 24px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+    }
+
+    .suite-body.open {
+      max-height: 2000px;
+      padding: 16px 24px;
+    }
+
+    .test-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      transition: background 0.2s;
+    }
+
+    .test-item:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .test-icon {
+      font-size: 1.2rem;
+      flex-shrink: 0;
+      width: 24px;
+      text-align: center;
+    }
+
+    .test-icon.passed {
+      color: #4CAF50;
+    }
+
+    .test-icon.failed {
+      color: #f44336;
+    }
+
+    .test-content {
+      flex: 1;
+    }
+
+    .test-name {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .test-error {
+      color: #f44336;
+      font-size: 0.9rem;
+      background: rgba(244, 67, 54, 0.1);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .btn {
+      display: block;
+      width: 200px;
+      margin: 30px auto;
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 20px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4CAF50, #8BC34A);
+      transition: width 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>塔防游戏 - 单元测试</h1>
+    <p class="subtitle">点击下方按钮运行测试</p>
+
+    <button class="btn" onclick="runTests()">▶ 运行测试</button>
+
+    <div id="results"></div>
+  </div>
+
+  <canvas id="test-canvas" style="display: none;" width="1000" height="600"></canvas>
+
+  <script src="js/map.js"></script>
+  <script src="js/tower.js"></script>
+  <script src="js/enemy.js"></script>
+  <script src="js/projectile.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/tests.js"></script>
+
+  <script>
+    function runTests() {
+      const btn = document.querySelector('.btn');
+      btn.disabled = true;
+      btn.textContent = '运行中...';
+
+      setTimeout(() => {
+        const summary = runAllTests();
+        renderResults(summary);
+        btn.disabled = false;
+        btn.textContent = '↻ 重新运行';
+      }, 100);
+    }
+
+    function renderResults(summary) {
+      const container = document.getElementById('results');
+      const passRate = summary.total > 0 ? (summary.passed / summary.total * 100).toFixed(1) : 0;
+
+      let html = `
+        <div class="summary">
+          <div class="stat passed">
+            <div class="stat-value">${summary.passed}</div>
+            <div class="stat-label">通过</div>
+          </div>
+          <div class="stat ${summary.failed > 0 ? 'failed' : 'total'}">
+            <div class="stat-value">${summary.failed}</div>
+            <div class="stat-label">失败</div>
+          </div>
+          <div class="stat total">
+            <div class="stat-value">${summary.total}</div>
+            <div class="stat-label">总计</div>
+          </div>
+          <div class="stat total">
+            <div class="stat-value">${passRate}%</div>
+            <div class="stat-label">通过率</div>
+          </div>
+        </div>
+
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: ${passRate}%"></div>
+        </div>
+      `;
+
+      const suites = {};
+      for (const result of summary.results) {
+        if (!suites[result.suite]) {
+          suites[result.suite] = [];
+        }
+        suites[result.suite].push(result);
+      }
+
+      for (const [suiteName, tests] of Object.entries(suites)) {
+        const passed = tests.filter(t => t.passed).length;
+        const failed = tests.filter(t => !t.passed).length;
+        const suiteIcon = failed > 0 ? '❌' : '✅';
+
+        html += `
+          <div class="suite">
+            <div class="suite-header" onclick="toggleSuite(this)">
+              <span>${suiteIcon} ${suiteName} <span style="color: #888; font-size: 0.9rem; font-weight: normal;">(${passed}/${tests.length})</span></span>
+              <span class="suite-toggle">▼</span>
+            </div>
+            <div class="suite-body open">
+        `;
+
+        for (const test of tests) {
+          const icon = test.passed ? '✓' : '✗';
+          const iconClass = test.passed ? 'passed' : 'failed';
+
+          html += `
+            <div class="test-item">
+              <div class="test-icon ${iconClass}">${icon}</div>
+              <div class="test-content">
+                <div class="test-name">${test.name}</div>
+                ${test.error ? `<div class="test-error">${test.error}</div>` : ''}
+              </div>
+            </div>
+          `;
+        }
+
+        html += `
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function toggleSuite(header) {
+      const body = header.nextElementSibling;
+      body.classList.toggle('open');
+      const toggle = header.querySelector('.suite-toggle');
+      toggle.textContent = body.classList.contains('open') ? '▼' : '▶';
+    }
+  </script>
+</body>
+</html>
