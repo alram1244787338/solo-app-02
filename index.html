@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>塔防游戏</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="game-container">
+    <h1>塔防游戏</h1>
+    <canvas id="gameCanvas" width="960" height="600"></canvas>
+    <div class="instructions">
+      <p><strong>操作说明：</strong></p>
+      <ul>
+        <li>点击右侧塔按钮选择防御塔</li>
+        <li>在草地上点击放置防御塔</li>
+        <li>点击已放置的塔查看信息</li>
+        <li>右键取消选择</li>
+        <li>点击「开始波次」按钮开始战斗</li>
+      </ul>
+    </div>
+  </div>
+
+  <script src="js/map.js"></script>
+  <script src="js/enemy.js"></script>
+  <script src="js/projectile.js"></script>
+  <script src="js/tower.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/game.js"></script>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const game = new Game(canvas);
+    game.start();
+  </script>
+</body>
+</html>
