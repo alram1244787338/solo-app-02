@@ -219,25 +219,44 @@ class UI {
     if (!this.game.selectedTower) return;
 
     const tower = this.game.selectedTower;
-    if (!tower.canUpgrade()) return;
-
     const ctx = this.ctx;
     const btn = this.upgradeButton;
-    const cost = tower.getUpgradeCost();
-    const canAfford = this.game.gold >= cost;
 
-    ctx.fillStyle = canAfford ? '#F39C12' : '#7F8C8D';
+    let text, bgColor, disabled = false;
+
+    if (!tower.canUpgrade()) {
+      text = '✦ 已满级';
+      bgColor = '#7F8C8D';
+      disabled = true;
+    } else {
+      const cost = tower.getUpgradeCost();
+      const canAfford = this.game.gold >= cost;
+      if (canAfford) {
+        text = `↑ 升级 (💰${cost})`;
+        bgColor = '#F39C12';
+      } else {
+        text = `金币不足 (需 💰${cost})`;
+        bgColor = '#C0392B';
+        disabled = true;
+      }
+    }
+
+    if (this.game.upgradeFlashTimer > 0) {
+      bgColor = '#E74C3C';
+    }
+
+    ctx.fillStyle = bgColor;
     ctx.fillRect(btn.x, btn.y, btn.width, btn.height);
 
-    ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = disabled ? '#555' : '#FFFFFF';
+    ctx.lineWidth = disabled ? 1 : 2;
     ctx.strokeRect(btn.x, btn.y, btn.width, btn.height);
 
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 13px Arial';
+    ctx.font = 'bold 12px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`↑ 升级 (💰${cost})`, btn.x + btn.width / 2, btn.y + btn.height / 2);
+    ctx.fillText(text, btn.x + btn.width / 2, btn.y + btn.height / 2);
   }
 
   _drawWaveButton() {

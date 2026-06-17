@@ -20,6 +20,8 @@ class Game {
     this.gameOver = false;
     this.lastTime = 0;
 
+    this.upgradeFlashTimer = 0;
+
     this._bindEvents();
   }
 
@@ -117,17 +119,30 @@ class Game {
 
   _tryUpgradeTower() {
     if (!this.selectedTower) return;
-    if (!this.selectedTower.canUpgrade()) return;
+
+    if (!this.selectedTower.canUpgrade()) {
+      this.upgradeFlashTimer = 300;
+      return;
+    }
 
     const cost = this.selectedTower.getUpgradeCost();
-    if (this.gold < cost) return;
+    if (this.gold < cost) {
+      this.upgradeFlashTimer = 300;
+      return;
+    }
 
     this.gold -= cost;
     this.selectedTower.upgrade();
   }
 
   _selectExistingTower(col, row) {
-    this.selectedTower = this.towerManager.getTowerAt(col, row);
+    const tower = this.towerManager.getTowerAt(col, row);
+    if (tower) {
+      this.selectedTower = tower;
+    } else {
+      this.selectedTower = null;
+      this.selectedTowerType = null;
+    }
   }
 
   _restart() {
@@ -148,26 +163,34 @@ class Game {
   update(deltaTime) {
     if (this.gameOver) return;
 
-    const previousEnemies = [...this.enemySpawner.enemies];
+    if (this.upgradeFlashTimer > 0) {
+      this.upgradeFlashTimer -= deltaTime;
+    }
+
+    const previousAliveEnemies = new Set(this.enemySpawner.enemies.filter(e => e.alive));
 
     this.enemySpawner.update(deltaTime);
     this.towerManager.update(deltaTime, this.enemySpawner, this.projectileManager.projectiles);
     this.projectileManager.update(deltaTime, this.enemySpawner);
 
-    for (const enemy of previousEnemies) {
-      if (enemy.alive && !this.enemySpawner.enemies.includes(enemy)) {
+    for (const enemy of previousAliveEnemies) {
+      if (!enemy.alive && !enemy.reachedEnd) {
         this.gold += enemy.reward;
         this.score += enemy.reward * 2;
       }
     }
 
-    for (const enemy of this.enemySpawner.enemies) {
+    for (let i = this.enemySpawner.enemies.length - 1; i >= 0; i--) {
+      const enemy = this.enemySpawner.enemies[i];
       if (enemy.reachedEnd && enemy.alive) {
-        enemy.alive = false;
-        this.lives--;
-        if (this.lives <= 0) {
-          this.lives = 0;
-          this.gameOver = true;
+        if (enemy.reachedEndTimer >= enemy.finalGracePeriod) {
+          enemy.alive = false;
+          this.lives--;
+          this.enemySpawner.enemies.splice(i, 1);
+          if (this.lives <= 0) {
+            this.lives = 0;
+            this.gameOver = true;
+          }
         }
       }
     }

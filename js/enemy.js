@@ -11,6 +11,8 @@ class Enemy {
     this.progress = 0;
     this.alive = true;
     this.reachedEnd = false;
+    this.reachedEndTimer = 0;
+    this.finalGracePeriod = 600;
     this.slowed = 0;
     this.slowTimer = 0;
 
@@ -80,7 +82,12 @@ class Enemy {
   }
 
   update(deltaTime) {
-    if (!this.alive || this.reachedEnd) return;
+    if (!this.alive) return;
+
+    if (this.reachedEnd) {
+      this.reachedEndTimer += deltaTime;
+      return;
+    }
 
     if (this.slowTimer > 0) {
       this.slowTimer -= deltaTime;
@@ -95,6 +102,7 @@ class Enemy {
     if (this.progress >= 1) {
       this.progress = 1;
       this.reachedEnd = true;
+      this.reachedEndTimer = 0;
     }
 
     this._updatePosition();
@@ -104,8 +112,16 @@ class Enemy {
     if (!this.alive) return;
 
     const isSlowed = this.slowed > 0;
+    const isAtEnd = this.reachedEnd && this.alive;
+    let alpha = 1;
+
+    if (isAtEnd) {
+      const blink = Math.sin(Date.now() / 80) * 0.3 + 0.7;
+      alpha = blink;
+    }
 
     ctx.save();
+    ctx.globalAlpha = alpha;
     ctx.translate(this.x, this.y);
 
     if (isSlowed) {
@@ -285,7 +301,7 @@ class EnemySpawner {
 
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       this.enemies[i].update(deltaTime);
-      if (!this.enemies[i].alive || this.enemies[i].reachedEnd) {
+      if (!this.enemies[i].alive) {
         this.enemies.splice(i, 1);
       }
     }
